@@ -1,0 +1,135 @@
+---
+title: "ISLR exercises"
+author: "Литвинцев И.С"
+date: '13 мая 2018 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("ISLR")
+library(ISLR)
+```
+
+### Advertising data set
+```{r}
+path <- "C:/Users/806263/Desktop/SPbU/Магистратура Матмех (2017-2019)/2 семестр/Интеллектуальный анализ данных/ISLR data/Advertising.txt" 
+adver <- read.csv(path)
+adver
+
+cor(adver[c("TV", "Radio", "Newspaper")])
+
+fit.lm <- lm(Sales ~ TV + Newspaper + Radio, adver)
+
+
+fit.lm <- lm(Sales ~ TV, adver)
+{plot(adver$TV, adver$Sales)
+lines(adver$TV, fit.lm$fitted.values, col="red")
+lm.values <- fit.lm$coefficients[1]+fit.lm$coefficients[2]*adver$TV
+lines(adver$TV, lm.values, col="blue")
+}
+sort(adver$TV)
+
+plot(adver$Radio, adver$Sales)
+plot(adver$Newspaper, adver$Sales)
+
+
+
+summary(fit.lm)
+```
+
+
+### Credit data set
+
+```{r}
+Credit
+stringi::stri_conv(balance, age,cards, education, income, limit, rating)
+quantities <- c("Balance", "Age", "Cards", "Education", "Income", "Limit", "Rating")
+
+pairs(Credit[quantities], pch=".", col="blue")
+
+Credit$Gender
+Credit$Sex <- (as.integer(Credit$Gender))
+fit <- lm(Balance ~ Gender, Credit)
+summary(fit)
+
+plot(Balance ~ Gender, Credit)
+
+
+fit$coefficients
+
+plot(Credit$Balance)
+lm.ethnicity <- lm(Balance ~ Ethnicity, Credit)
+summary(lm.ethnicity)
+
+```
+
+```{r}
+lm.fit <- lm(Balance ~ Age, Credit)
+summary(lm.fit)
+
+attributes(lm.fit)
+lm.fit$coefficients #coef(lm.fit)
+
+confint(lm.fit)
+plot(Credit$Age,Credit$Balance)+
+abline(lm.fit, col="red")
+```
+
+
+
+```{r}
+mat <- matrix(c(1,2, 3,4), 2,2)
+
+
+rnorm(1)
+
+
+x <- sort(runif(100))
+plot(x, 2*x + 0.1*rnorm(100), type="p")
+
+{N <- 10
+y <- vector("list", N)
+noisy.y <- vector("list", N)
+x <- vector("list", N)
+lm.fit <-  vector("list", N)
+poly.fit <-  vector("list", N)
+lm.var <- vector("list", N)
+poly.var <- vector("list", N)
+}
+for(i in 1:N){
+  # получаем разные выборки для нашей генеральной совокупности
+  x[[i]] <- sort(10*runif(100))
+ # y[[i]] <- 2*x[[i]] + 0.1*rnorm(100)
+  y[[i]] <- 500 + 0.4 * (x[[i]]-10)^3
+  
+  noisy.y[[i]] <- y[[i]] + rnorm(100, mean=10, sd=80)
+  
+  # linear regression model
+  lm.fit[[i]] <- lm(noisy.y[[i]] ~ x[[i]])
+  # polynomial regression model
+  poly.fit[[i]] <- lm(noisy.y[[i]] ~ poly(x[[i]], 3, raw=TRUE))
+  {
+    plot(x[[i]], noisy.y[[i]])
+    lines(x[[i]], y[[i]], col="blue", lwd = 2)
+    lines(x[[i]], lm.fit[[i]]$fitted.values, col="red", lwd = 2)
+    lines(x[[i]], poly.fit[[i]]$fitted.values, col="orange", lwd = 2)
+  }
+  
+  lm.var[[i]] <- var(lm.fit[[i]]$fitted.values)
+  poly.var[[i]] <- var(poly.fit[[i]]$fitted.values)
+}
+
+
+
+
+
+lm.var <- unlist(lm.var, use.names=FALSE)
+poly.var <- unlist(poly.var, use.names=FALSE)
+
+mean(lm.var)
+mean(poly.var)
+
+
+```
+

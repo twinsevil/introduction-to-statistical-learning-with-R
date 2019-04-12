@@ -1,0 +1,138 @@
+---
+title: "1) Глава 3. Линейная регрессия. "
+author: "Литвинцев И.С"
+date: '21 августа 2018 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+```
+
+## Задание 10.
+
+This question should be answered using the Carseats data set.
+
+#### (a) Fit a multiple regression model to predict `Sales` using `Price`, `Urban`, and `US`.
+
+Для начала опишем используемые переменные.
+
+1) `Sales` - Unit sales (in thousands) at each location.
+
+2) `Price` - Price company charges for car seats at each site.
+
+3) `Urban` - A factor with levels No and Yes to indicate whether the store is in an urban or rural location.
+
+4) `US` - A factor with levels No and Yes to indicate whether the store is in the US or not.
+
+
+```{r}
+head(Carseats)
+attach(Carseats)
+
+lm.fit <- lm(Sales ~ Price + Urban + US, Carseats)
+summary(lm.fit)
+```
+
+#### (b) Provide an interpretation of each coefficient in the model. Becareful—some of the variables in the model are qualitative!
+
+
+Коэффициент при предикторе `Price` равен $-0.054$. Это можно проинтерпретировать, как среднее количество нереализованных детских кресел в случае увеличения цены на один пункт. Т.е. при увеличении цены детского кресла на 1 доллар компания в среднем будет реализовывать на 54 кресла меньше. 
+
+Коэффициент `Intercept` равный $13.043$ интерпретируется, как средний прирост в продажах кресел среди магазинов, находящихся в пригородах за пределами США. Т.е. в среднем эти магазины реализуют около 13043 штук кресел.
+
+Коэффициент при dummy переменной `UrbanYes` равен $-0.022$ и интерпретируется, как среднее уменьшение продаж кресел в магазинах, расположенных в городах за пределами США, по потношению к показателям продаж магазинов, расположенных в пригородах за пределами США. Т.е. в среднем на 22 кресла объем продаж в этих магазинах уменьшается.
+
+Коэффициент при dummy переменной `USYes` равен $1.200$ и интерпретируется, как среднее увеличение продаж кресел в магазинах, расположенных в пригородах США, по потношению к показателям продаж магазинов, расположенных в пригородах за пределами США. Т.е. в среднем на 1200 кресел объем продаж в этих магазинах увеличивается.
+
+
+#### (c) Write out the model in equation form, being careful to handle the qualitative variables properly.
+
+
+Посмотрим на кодировку dummy переменных `UrbanYes` и `USYes` (хотя это можно понять из названий этих переменных).
+
+```{r}
+contrasts(Carseats$US)
+contrasts(Carseats$Urban)
+```
+
+Выпишем уравнение регресии для i-го наблюдения.
+
+$$ \textbf{Sales} = \beta_0 + \beta_1 \times \textbf{Price}  + \beta_2 \times \textbf{USYes} +\beta_3 \times \textbf{UrbanYes} + \varepsilon.$$
+Подставив значения dummy переменных, получим:
+
+$$ \textbf{Sales} = \beta_1 \times \textbf{Price} +  \begin{cases} \beta_0 + \beta_2 + \beta_3 + \varepsilon, & \mbox{если магазин находится в городе США}  \\ \beta_0 +\beta_2 + \varepsilon, & \mbox{если магазин находится в пригороде США}  \\ \beta_0 + \beta_3 + \varepsilon, & \mbox{если магазин находится в городе за пределами США}    \\
+\beta_0 + \varepsilon, & \mbox{если магазин находится в пригороде за пределами США} 
+\end{cases}$$
+
+
+#### (d) For which of the predictors can you reject the null hypothesis $H_0: \beta_j = 0$?
+
+Для удобства выведем Summary еще раз. 
+
+```{r}
+summary(lm.fit)
+```
+
+Если за уровень значимости  принять стандартное значение $\alpha = 0.05$, то глядя на p-value для наших предикторов, приходим к очевидному выводу, что предиктор `UrbanYes` незначим, а остальные значимы.
+
+
+#### (e) On the basis of your response to the previous question, fit a smaller model that only uses the predictors for which there is evidence of association with the outcome.
+
+Итак, исключая незначимый предиктор `Urban`, получим модель:
+
+```{r}
+lm.fit <- lm(Sales ~ Price + US, Carseats)
+summary(lm.fit)
+```
+
+#### (f) How well do the models in (a) and (e) fit the data?
+
+Чтобы ответить на этот вопрос, обратим внимание на **RSE** и **Adjusted R-squared**. Из таблицы делаем вывод, что **RSE** для модели (a) больше, чем для модели (e). А также значение  **Adjusted R-squared** модели (a) меньше, чем  (e). Т.е. модель (e) чуть лучше объясняет разброс в данных, чем модель (а). 
+
+|              	| Модель (a) 	| Модель (e) 	|
+|:------------:	|:----------:	|:----------:	|
+|      **RSE**   	|      2.472  	|    2.469   	|
+| **R^2 adjusted** 	|   0.2335   	|   0.2354 	  |
+
+Однако заметим, что значения  **Adjusted R-squared** довольно низки в обоих случаях. Это должно навести нас на мысль, что обе модели линейной регрессии возможно недостаточно хорошо соответствуют данным, либо дисперсия в данных слишком большая.
+
+#### (g) Using the model from (e), obtain 95% confidence intervals for the coefficient(s).
+
+
+```{r}
+confint(lm.fit, level = 0.95)
+```
+
+#### (h) Is there evidence of outliers or high leverage observations in the model from (e)?
+
+```{r}
+{par(mfrow=c(2,2), mai=c(0.5,0.5,0.2,0.1))
+plot(lm.fit)}
+
+
+#plot(hatvalues(lm.fit), sqrt(abs(rstudent(lm.fit))))
+#which.max(hatvalues(lm.fit))
+#Carseats[43, c("Sales", "Price")]
+```
+
+Что можно сказать, глядя на эти графики? Во-первых, по графику **Residuals vs Fitted** видим, что нет паттернов и зависимость действительно похожа на линейную. Также отметим постоянную высокую дисперсию, которую мы предполагали увидеть, глядя на низкое значение  **Adjusted R-squared** статистики. 
+
+Судя по графикам **Scale-Location** и **Residuals vs Leverage**, явных аутлайеров нет (т.к. все значение Standardized residuals на графике **Residuals vs Leverage** принадлежат отрезку [-3,3]). Точка с максимальным значением leverage чуть больше 0.04 подозрительна на high leverage point, но, вообще говоря, у нее не достаточно высокое значение уровня leverage - чуть больше 0.04 при среднем значениие leverage всех точек равным $\frac{p+1}{n} = \frac{3}{400} =  0.0075$. Поэтому оставим ее. 
+
+#### Построим график продаж в зависимости от цены и местонахождения магазинов.
+
+```{r}
+ind <- Carseats$US == "Yes"
+{plot(Price[ind], Sales[ind], col=2, xlab = "Price", ylab = "Sales")+
+  lines(Price[ind], fitted(lm.fit)[ind], col=2)+
+  points(Price[!ind], Sales[!ind], col=3)+
+  lines(Price[!ind], fitted(lm.fit)[!ind], col=3)
+  legend("topright", legend = c("US stores", "Non-US stores"), col=c(2,3),lty=1, lwd=2)
+}
+
+detach(Carseats)
+```
+
+

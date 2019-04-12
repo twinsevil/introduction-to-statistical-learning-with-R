@@ -1,0 +1,175 @@
+---
+title: "2. Classification"
+author: "Литвинцев И.С"
+date: '29 августа 2018 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Задание 13.
+
+Using the Boston data set, fit classification models in order to predict whether a given suburb has a crime rate above or below the median. Explore logistic regression, LDA, and KNN models using various subsets of the predictors. Describe your findings.
+
+Используя Бостонский набор данных, обучите модели классификации, чтобы предсказать, имеет ли данный пригород уровень преступности выше или ниже медианы. Исследуйте модели логистической регрессии, LDA и KNN, используя различные подмножества предикторов. Опишите свои выводы
+
+1) crim - уровень преступности на душу населения города.
+
+2) zn - доля жилых земель, зонированных на земельные участки площадью более 25 000 кв. футов.
+
+3) indus - доля нерыночных (нерозничных) акров в городе.
+
+4) chas - фиктивная переменная реки Чарльз (= 1, Если тракт граничит с рекой; 0 В противном случае).
+
+5) nox - концентрация оксидов азота (частей на 10 миллионов).
+
+6) rm - среднее количество комнат в жилом помещении.
+
+7) age - доля жилых единиц, построенных до 1940 года.
+
+8) dis - средневзвешенное расстояние до пяти Бостонских центров занятости.
+
+9) rad - индекс доступности радиальных магистралей.
+
+10) tax - полная стоимость налога на имущество за \$10000 
+
+11) ptratio - соотношение учеников и учителей по городу.
+
+12) black - 1000(Bk - 0,63)^2, где Bk - доля чернокожих по городу.
+
+13) lstat - более низкий статус населения (в процентах).
+
+14) medv - медианная стоимость домов, занятых владельцами в \$1000.
+
+```{r}
+library(MASS)
+library(knitr)
+head(Boston)
+data <- Boston
+
+names(data)
+```
+
+Найдем медианный уровень преступности и на его основе определим классы. Таким образом, что TRUE будет означать пригород с уровнем преступности выше медианного, а FALSE - ниже. 
+
+```{r}
+m <- median(data$crim)
+data$crim.class <- data$crim > m
+kable(head(data))
+attach(data)
+```
+
+Разделим случайным образом данные на обучающую и тестовую выборки.
+
+```{r}
+n <- length(crim.class)
+set.seed(1)
+rand.ind <- sort(sample(1:n, size=406))
+train <- rep(FALSE, n)
+train[rand.ind] = TRUE
+data.test <- data[!train, ]
+data.test
+crim.class.test <- data$crim.class[!train]
+```
+
+Для начала обучим модель логистической регрессиии со всеми предикторами.
+
+```{r}
+glm.fit <- glm(crim.class ~ .-crim, data=data, family=binomial, subset=train)
+```
+
+Проверим предикторы на мультколлинаерность. 
+```{r}
+library(car)
+vif(glm.fit)
+```
+
+Лишь у предиктора `medv` высокое значение VIF (variance inflation factor), однако принято считать, что критичны лишь значения VIF $\ge$ 10. Поэтому будем считать, что мультиколлинеарности в данных нет. 
+
+```{r}
+summary(glm.fit)
+```
+
+
+Видим, что лишь 8 предикторов значимы. И то 6 из них слабо значимы. Но для начала посмотрим сколько ошибок допустил классификатор на тренировочных данных. 
+
+```{r}
+glm.prob <- predict(glm.fit, data.test, type="response")
+head(glm.prob)
+
+contrasts(crim.class)
+n.test <- length(glm.prob)
+glm.pred <- rep("FALSE", n.test)
+glm.pred[glm.prob>0.5] = "TRUE"
+glm.pred[1:30]
+table(glm.pred, crim.class.test)
+mean(glm.pred == crim.class.test)
+```
+
+Точность классификации достаточно высокая  92%.
+Посмотрим, что с ней станет, если исключить незначимые предикторы
+
+```{r}
+glm.fit <- glm(crim.class ~ nox+rad+dis+zn+tax, data=data, family=binomial, subset=train)
+summary(glm.fit)
+```
+
+```{r}
+glm.prob <- predict(glm.fit, data.test, type="response")
+head(glm.prob)
+
+n1 <- length(glm.prob)
+glm.pred <- rep("FALSE", n1)
+glm.pred[glm.prob>0.5] = "TRUE"
+
+table(glm.pred, crim.class.test)
+mean(glm.pred == crim.class.test)
+```
+
+```{r}
+head(data)
+kable(cor(data), digits = 2)
+
+pairs(data)
+
+detach(data)
+```
+
+
+```{r}
+lda.fit <- lda(crim.class ~ .-crim, data=data, subset=train)
+lda.fit
+lda.pred <- predict(lda.fit, data.test)
+lda.class <- lda.pred$class
+table(lda.class, crim.class.test)
+mean(lda.class==crim.class.test)
+```
+
+### KNN метод
+
+Для начала стандартизуем данные, т.к. от этого зависит правильность результатов метода 
+
+```{r}
+data.standardized <- data.frame(scale(data[,-15]))
+data.standardized
+
+data.train <- data.standardized[train, ]
+data.test <- data.standardized[!train, ]
+class.train <- data[train, "crim.class"]
+
+
+```
+
+Теперь обучим модель при $k=1$ и посмотрим точность прогноза.
+
+```{r}
+library(class)
+knn.pred <- knn(train = data.train, test = data.test, cl =  class.train, k=1 )
+table(knn.pred,crim.class.test)
+mean(knn.pred==crim.class.test)
+```
+
+
+http://rpubs.com/Mannypac12/217844

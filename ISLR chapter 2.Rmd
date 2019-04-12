@@ -1,0 +1,99 @@
+---
+title: "ISLR chapter 2"
+author: "Литвинцев И.С"
+date: '8 августа 2018 г '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(ISLR)
+
+x <- rnorm(50) 
+y <- x + rnorm(50, mean=50, sd = .1)
+
+
+pdf("Figure.pdf")
+plot(x,y,col =" green ")
+dev.off()
+```
+#### Отрисовка графики
+
+Можно построить линии уровня с помощью contour().
+
+```{r}
+x <-  seq(-pi ,pi ,length =50)
+y <- x
+# создаем массив f
+f <- outer(x, y, function(x,y) cos(y)/(1+x^2))
+contour(x, y, f)+
+contour(x, y, f, nlevels=45, add=T)
+
+fa=(f-t(f))/2
+contour(x,y,fa, nlevels=15)
+
+```
+
+### Загрузка данных. 
+
+Команда fix() позволяет редактировать данные в GUI окне. 
+```{r}
+head(Auto)
+#fix(Auto)
+```
+
+
+### Графики
+
+Alternatively, we can use the attach() function in order to tell R to make the variables in this data frame available by name
+
+```{r}
+plot(Auto$cylinders , Auto$mpg )
+attach(Auto)
+plot(cylinders , mpg)
+```
+
+The cylinders variable is stored as a numeric vector, so R has treated it as quantitative. However, since there are only a small number of possible values for cylinders, one may prefer to treat it as a qualitative variable.
+
+```{r}
+cylinders =as.factor (cylinders )
+```
+
+If the variable plotted on the x-axis is categorial, then boxplots will automatically be produced by the plot() function. As usual, a number of options can be specified in order to customize the plots.
+
+У боксплота по центру - медиана, нижняя и верхняя границы ящика - 1 и 3 квартили соответственно, границы усов - элементы выборки принадлежащие отрезку [Q1-1.5 IQR, Q3+1.5 IQR] и макисмально приближенные к его краям. Остальное - выбросы.
+```{r}
+plot(cylinders , mpg)
+
+plot(cylinders , mpg , col ="red ")
+plot(cylinders , mpg , col ="red", varwidth =T)
+plot(cylinders , mpg , col ="red", varwidth =T, horizontal =T)
+plot(cylinders , mpg , col ="red", varwidth =T, xlab=" cylinders ", ylab ="MPG ")
+```
+
+The hist() function can be used to plot a histogram. Note that col=2 has the same effect as col="red".
+
+```{r}
+hist(mpg)
+hist(mpg ,col =2)
+hist(mpg ,col =2, breaks =15)
+```
+
+The pairs() function creates a scatterplot matrix i.e. a scatterplot for every pair of variables for any given data set. We can also produce scatterplots for just a subset of the variables.
+
+```{r}
+pairs(Auto)
+pairs(~ mpg + displacement + horsepower + weight + acceleration , Auto)
+```
+
+В сочетании с функцией `plot()`, `identify()` предоставляет полезный интерактивный метод для определения значения определенной переменной для точек на графике. Мы передаем три аргумента `identify()`: переменную оси x, переменную оси y и переменную, значения которой мы хотели бы видеть напечатанными для каждой точки. Затем при нажатии на заданную точку на графике R выведет значение интересующей переменной. Щелчок правой кнопкой мыши на пилоте приведет к выходу из функции `identify()`. Числа, напечатанные под функцией identify (), соответствуют строкам для выбранных точек.
+
+```{r}
+plot(horsepower, mpg)+
+identify(horsepower, mpg, name) # но у меня не работает
+```
+
